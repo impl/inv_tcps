@@ -54,7 +54,8 @@ examples:
     2>                 Self(Self);
     2>             Error ->
     2>                 ok
-    2>         end,
+    2>         end
+    2>     end,
     2>     Runner(Runner)
     2> end.
 
@@ -76,6 +77,6 @@ immediately in that session.
 
 You can get a list of active acceptors by calling `inv_tcps:active(Pid)`
 (likewise, a list of inactive acceptors can be obtained by calling
-`inv_tcps:inactive(Pid)`).
+`inv_tcps:idle(Pid)`).
 
 Pretty cool, huh?
