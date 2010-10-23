@@ -20,7 +20,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start/1, stop/1]).
+-export([start_link/1, start_link/2, start/1, start/2]).
 -export([port/1, idle/1, active/1]).
 
 %% gen_server callbacks
@@ -44,25 +44,29 @@
 %% API functions
 %% ===================================================================
 
-start(Args) ->
+start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
+start_link(Name, Args) ->
+    gen_server:start_link(Name, ?MODULE, Args, []).
 
-port(Pid) ->
-    case gen_server:call(Pid, port) of
+start(Args) ->
+    gen_server:start(?MODULE, Args, []).
+start(Name, Args) ->
+    gen_server:start(Name, ?MODULE, Args, []).
+
+port(ServerRef) ->
+    case gen_server:call(ServerRef, port) of
         {ok, Port} ->
             Port;
         Error ->
             Error
     end.
 
-idle(Pid) ->
-    gen_server:call(Pid, idle).
+idle(ServerRef) ->
+    gen_server:call(ServerRef, idle).
 
-active(Pid) ->
-    gen_server:call(Pid, active).
-
-stop(Pid) ->
-    gen_server:cast(Pid, stop).
+active(ServerRef) ->
+    gen_server:call(ServerRef, active).
 
 %% ===================================================================
 %% gen_server callbacks
@@ -126,8 +130,6 @@ handle_call(active, _From, #state{active = Active} = State) ->
 handle_call(_Message, _From, State) ->
     {reply, ignore, State}.
 
-handle_cast(stop, State) ->
-    {stop, normal, State};
 handle_cast({active, Pid}, #state{idle = Idle0, idle_size = IdleSize,
                                   active = Active0, active_size = ActiveSize} = State) ->
     case sets:is_element(Pid, Idle0) of
