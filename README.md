@@ -61,7 +61,7 @@ examples:
 
 We exploit a bit of anonymous function trickery to get the callback to call
 itself for more data; obviously if we were not using anonymous functions we
-could avoid jumping through that hope. Otherwise, the code is fairly
+could avoid jumping through that hoop. Otherwise, the code is fairly
 straightforward: receive data on the socket, print out an informational line,
 and then send the data back. Rinse and repeat.
 
