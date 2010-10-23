@@ -61,6 +61,9 @@ handle_cast(accept, {Listener, Callback, AcceptFun, CloseFun} = State) ->
             end,
             accept(self()),
             {noreply, State};
+        {error, closed} ->
+            %% Parent process finished, so no worries here -- just shut down
+            {stop, normal, State};
         {error, timeout} ->
             %% Allows us to process other messages in our mailbox
             accept(self()),
