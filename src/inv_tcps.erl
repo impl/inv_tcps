@@ -60,20 +60,10 @@ port(Pid) ->
     end.
 
 idle(Pid) ->
-    case gen_server:call(Pid, idle) of
-        {ok, Idle} ->
-            Idle;
-        Error ->
-            Error
-    end.
+    gen_server:call(Pid, idle).
 
 active(Pid) ->
-    case gen_server:call(Pid, active) of
-        {ok, Active} ->
-            Active;
-        Error ->
-            Error
-    end.
+    gen_server:call(Pid, active).
 
 stop(Pid) ->
     gen_server:cast(Pid, stop).
@@ -134,9 +124,9 @@ init(Args) ->
 handle_call(port, _From, #inv_tcps_state{port = Port} = State) ->
     {reply, {ok, Port}, State};
 handle_call(idle, _From, #inv_tcps_state{idle = Idle} = State) ->
-    {reply, {ok, Idle}, State};
+    {reply, {ok, sets:to_list(Idle)}, State};
 handle_call(active, _From, #inv_tcps_state{active = Active} = State) ->
-    {reply, {ok, Active}, State};
+    {reply, {ok, sets:to_list(Active)}, State};
 handle_call(_Message, _From, State) ->
     {reply, ignore, State}.
 
