@@ -87,7 +87,5 @@ code_change(_OldVsn, State, _Extra) ->
 
 callback({M, F}, Socket) ->
     M:F(Socket);
-callback({M, F, A}, Socket) ->
-    apply(M, F, [Socket | A]);
-callback(Fun, Socket) ->
+callback(Fun, Socket) when is_function(Fun) ->
     Fun(Socket).

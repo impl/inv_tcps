@@ -34,15 +34,13 @@ Head into the `ebin` directory and start up an Erlang shell:
 
 This starts the inv_tcps supervisor. Before we continue, we need to define a
 callback function. The callback can be a `fun()` or a tuple containing
-`{Module, Function}` or `{Module, Function, Args}`.
+`{Module, Function}`.
 
-A callback accepts a `socket()` (as returned by `gen_tcp:accept/1,2`). In the
-case of a `{Module, Function, Args}` callback, the socket is prepended to the
-argument list (`[Socket | Args]`). You can perform all the usual operations on
-the socket, including `gen_tcp:recv/2,3`, `gen_tcp:send/2` and
-`gen_tcp:close/1`. If the callback function returns without closing the socket,
-it will automatically be closed by inv_tcps; socket finalization will also occur
-if the callback throws an exception.
+A callback accepts a `socket()` (as returned by `gen_tcp:accept/1,2`). You can
+perform all the usual operations on the socket, including `gen_tcp:recv/2,3`,
+`gen_tcp:send/2` and `gen_tcp:close/1`. If the callback function returns without
+closing the socket, it will automatically be closed by inv_tcps; socket
+finalization will also occur if the callback throws an exception.
 
 Let's create a simple echo server, since it's one of the more straightforward
 examples:
