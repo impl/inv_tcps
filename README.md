@@ -29,9 +29,8 @@ Head into the `ebin` directory and start up an Erlang shell:
     $ erl +K true +A 20
     1> application:load(inv_tcps), application:start(inv_tcps).
 
-This starts the inv_tcps supervisor. Before we continue, we need to define a
-callback function. The callback can be a `fun()` or a tuple containing
-`{Module, Function}`.
+Before we continue, we need to define a callback function. The callback can be a
+`fun()` or a tuple containing `{Module, Function}`.
 
 A callback accepts a `socket()` (as returned by `gen_tcp:accept/1,2`). You can
 perform all the usual operations on the socket, including `gen_tcp:recv/2,3`,
