@@ -27,10 +27,10 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
 %% Records
--record(inv_tcps_state, {listener, port, supervisor,
-                         initial_pool_size, maximum_pool_size,
-                         active = sets:new(), active_size = 0,
-                         idle = sets:new(), idle_size = 0}).
+-record(state, {listener, port, supervisor,
+                initial_pool_size, maximum_pool_size,
+                active = sets:new(), active_size = 0,
+                idle = sets:new(), idle_size = 0}).
 
 %% Defaults
 -define(DEFAULT_INITIAL_POOL_SIZE, 1).
@@ -101,12 +101,12 @@ init(Args) ->
                  end,
 
     %% Create listening socket
-    State = #inv_tcps_state{initial_pool_size = InitialSize,
-                            maximum_pool_size = MaximumSize},
+    State = #state{initial_pool_size = InitialSize,
+                   maximum_pool_size = MaximumSize},
     case gen_tcp:listen(Port, TcpOptions) of
         {ok, Listener} ->
-            case supervise(State#inv_tcps_state{listener = Listener,
-                                                port = inet:port(Listener)},
+            case supervise(State#state{listener = Listener,
+                                       port = inet:port(Listener)},
                            Callback) of
                 {ok, NewState} ->
                     {ok, NewState};
@@ -117,25 +117,25 @@ init(Args) ->
             {stop, Error}
     end.
 
-handle_call(port, _From, #inv_tcps_state{port = Port} = State) ->
+handle_call(port, _From, #state{port = Port} = State) ->
     {reply, {ok, Port}, State};
-handle_call(idle, _From, #inv_tcps_state{idle = Idle} = State) ->
+handle_call(idle, _From, #state{idle = Idle} = State) ->
     {reply, {ok, sets:to_list(Idle)}, State};
-handle_call(active, _From, #inv_tcps_state{active = Active} = State) ->
+handle_call(active, _From, #state{active = Active} = State) ->
     {reply, {ok, sets:to_list(Active)}, State};
 handle_call(_Message, _From, State) ->
     {reply, ignore, State}.
 
 handle_cast(stop, State) ->
     {stop, normal, State};
-handle_cast({active, Pid}, #inv_tcps_state{idle = Idle0, idle_size = IdleSize,
-                                           active = Active0, active_size = ActiveSize} = State) ->
+handle_cast({active, Pid}, #state{idle = Idle0, idle_size = IdleSize,
+                                  active = Active0, active_size = ActiveSize} = State) ->
     case sets:is_element(Pid, Idle0) of
         true ->
             Idle = sets:del_element(Pid, Idle0),
             Active = sets:add_element(Pid, Active0),
-            NewState = State#inv_tcps_state{idle = Idle, idle_size = IdleSize - 1,
-                                            active = Active, active_size = ActiveSize + 1},
+            NewState = State#state{idle = Idle, idle_size = IdleSize - 1,
+                                   active = Active, active_size = ActiveSize + 1},
             case supervise_children(NewState) of
                 {ok, ChildState} ->
                     {noreply, ChildState};
@@ -145,14 +145,14 @@ handle_cast({active, Pid}, #inv_tcps_state{idle = Idle0, idle_size = IdleSize,
         false ->
             {noreply, State}
     end;
-handle_cast({idle, Pid}, #inv_tcps_state{idle = Idle0, idle_size = IdleSize,
-                                         active = Active0, active_size = ActiveSize} = State) ->
+handle_cast({idle, Pid}, #state{idle = Idle0, idle_size = IdleSize,
+                                active = Active0, active_size = ActiveSize} = State) ->
     case sets:is_element(Pid, Active0) of
         true ->
             Active = sets:del_element(Pid, Active0),
             Idle = sets:add_element(Pid, Idle0),
-            NewState = State#inv_tcps_state{idle = Idle, idle_size = IdleSize + 1,
-                                            active = Active, active_size = ActiveSize - 1},
+            NewState = State#state{idle = Idle, idle_size = IdleSize + 1,
+                                   active = Active, active_size = ActiveSize - 1},
             case supervise_children(NewState) of
                 {ok, ChildState} ->
                     {noreply, ChildState};
@@ -166,17 +166,17 @@ handle_cast(_Message, State) ->
     {noreply, State}.
 
 handle_info({'DOWN', _MonitorRef, _Type, Pid, _Info},
-            #inv_tcps_state{idle = Idle0, idle_size = IdleSize,
-                            active = Active0, active_size = ActiveSize} = State) ->
+            #state{idle = Idle0, idle_size = IdleSize,
+                   active = Active0, active_size = ActiveSize} = State) ->
     NewState = case sets:is_element(Pid, Idle0) of
                    true ->
                        Idle = sets:del_element(Pid, Idle0),
-                       State#inv_tcps_state{idle = Idle, idle_size = IdleSize - 1};
+                       State#state{idle = Idle, idle_size = IdleSize - 1};
                    false ->
                        case sets:is_element(Pid, Active0) of
                            true ->
                                Active = sets:del_element(Pid, Active0),
-                               State#inv_tcps_state{active = Active, active_size = ActiveSize - 1};
+                               State#state{active = Active, active_size = ActiveSize - 1};
                            false ->
                                State
                        end
@@ -190,7 +190,7 @@ handle_info({'DOWN', _MonitorRef, _Type, Pid, _Info},
 handle_info(_Message, State) ->
     {noreply, State}.
 
-terminate(_Reason, #inv_tcps_state{listener = Listener}) ->
+terminate(_Reason, #state{listener = Listener}) ->
     %% The linked supervisor will be terminated when this process is terminated
     gen_tcp:close(Listener),
     ok.
@@ -200,7 +200,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% Private functions
 
-supervise(#inv_tcps_state{listener = Listener} = State, Callback) ->
+supervise(#state{listener = Listener} = State, Callback) ->
     Owner = self(),
     Supervisor = inv_tcps_acceptor_sup:start_link(Listener, Callback,
                                                   fun(Pid) -> accepted(Owner, Pid) end,
@@ -208,12 +208,12 @@ supervise(#inv_tcps_state{listener = Listener} = State, Callback) ->
 
     case Supervisor of
         {ok, SupervisorPid} ->
-            supervise_children(State#inv_tcps_state{supervisor = SupervisorPid});
+            supervise_children(State#state{supervisor = SupervisorPid});
         Error ->
             Error
     end.
 
-supervise_children(#inv_tcps_state{
+supervise_children(#state{
                       idle_size = IdleSize, active_size = ActiveSize,
                       initial_pool_size = InitialSize,
                       maximum_pool_size = MaximumSize} = State) when (IdleSize =:= 0 andalso
@@ -229,11 +229,11 @@ supervise_children(#inv_tcps_state{
 supervise_children(State) ->
     {ok, State}.
 
-supervise_child(#inv_tcps_state{supervisor = Supervisor, idle = Idle0, idle_size = IdleSize} = State) ->
+supervise_child(#state{supervisor = Supervisor, idle = Idle0, idle_size = IdleSize} = State) ->
     case spawn_child(Supervisor) of
         {ok, Pid} ->
             Idle = sets:add_element(Pid, Idle0),
-            {ok, State#inv_tcps_state{idle = Idle, idle_size = IdleSize + 1}};
+            {ok, State#state{idle = Idle, idle_size = IdleSize + 1}};
         Error ->
             Error
     end.
