@@ -18,11 +18,8 @@ the initial amount and never exceeds the maximum amount.
 Compiling
 ---------
 
-inv_tcps uses the excellent [rebar](http://hg.basho.com/rebar/) tool. (For now,
-actual releases aren't really handled but this functionality will be available
-soon.)
-
-To compile inv_tcps, execute `./rebar compile` in the project root.
+inv_tcps uses the excellent [rebar](http://hg.basho.com/rebar/) tool. To compile
+inv_tcps, execute `./rebar compile` in the project root.
 
 Playing around
 --------------
@@ -96,3 +93,32 @@ requests per second in a VM). The syntax for this is as follows:
     4> {ok, Pid2} = inv_tcps:start([{port, 8081}, {callback, YourCallback},
                                     {initial_pool_size, 4},
                                     {maximum_pool_size, 16}]).
+
+Using inv_tcps in your project
+------------------------------
+
+inv_tcps is effectively a `gen_server`, so it should be properly supervised in
+your application. The functions `inv_tcps:start_link/1,2` call and return the
+value of `gen_server:start_link/1,2` respectively.
+
+Your supervisor's `init/1` might look like
+
+    init([]) ->
+        Listener = {myapp_test, {myapp_test, start_link, []},
+                    permanent, 5000, worker, [myapp_test]},
+        Processes = [Listener],
+        {ok, {{one_for_one, 5, 10}, Processes}}.
+
+And `myapp_test` should be something like the following (exports removed for
+brevity):
+
+    start_link() ->
+        inv_tcps:start_link({local, ?MODULE},
+                            [{port, 8080}, {callback, {?MODULE, accept}}]).
+
+    accept(Socket) ->
+        %% Process connection
+        ok.
+
+There's also a [working sample project](http://github.com/invectorate/inv_tcps_echoserver)
+which could serve as a starting point for your own application!
