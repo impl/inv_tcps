@@ -54,7 +54,7 @@ handle_cast(accept, {Listener, Callback, AcceptFun, CloseFun} = State) ->
         {ok, Socket} ->
             try
                 AcceptFun(self()),
-                Callback(Socket)
+                callback(Callback, Socket)
             after
                 gen_tcp:close(Socket),
                 CloseFun(self())
@@ -79,3 +79,12 @@ terminate(_Reason, _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
+
+% Private functions
+
+callback({M, F}, Socket) ->
+    M:F(Socket);
+callback({M, F, A}, Socket) ->
+    apply(M, F, [Socket | A]);
+callback(Fun, Socket) ->
+    Fun(Socket).
