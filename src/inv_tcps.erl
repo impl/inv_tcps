@@ -34,8 +34,8 @@
                          idle = sets:new(), idle_size = 0}).
 
 %% Defaults
--define(DEFAULT_INITIAL_POOL_SIZE, 4).
--define(DEFAULT_MAXIMUM_POOL_SIZE, 16).
+-define(DEFAULT_INITIAL_POOL_SIZE, 1).
+-define(DEFAULT_MAXIMUM_POOL_SIZE, infinity).
 
 -define(DEFAULT_BACKLOG, 128).
 -define(DEFAULT_NO_DELAY, false).
@@ -220,7 +220,9 @@ supervise(#inv_tcps_state{listener = Listener} = State, Callback) ->
 supervise_children(#inv_tcps_state{
                       idle_size = IdleSize, active_size = ActiveSize,
                       initial_pool_size = InitialSize,
-                      maximum_pool_size = MaximumSize} = State) when (IdleSize =:= 0 andalso ActiveSize < MaximumSize) orelse
+                      maximum_pool_size = MaximumSize} = State) when (IdleSize =:= 0 andalso
+                                                                                       (MaximumSize =:= infinity orelse
+                                                                                        ActiveSize < MaximumSize)) orelse
                                                                      IdleSize + ActiveSize < InitialSize ->
     case supervise_child(State) of
         {ok, NewState} ->
