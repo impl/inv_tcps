@@ -16,7 +16,6 @@
  [{description, "Multi-worker TCP daemon"},
   {vsn, "1.0.0"},
   {modules, [inv_tcps_app,
-             inv_tcps_sup,
              inv_tcps,
              inv_tcps_acceptor_sup,
              inv_tcps_acceptor]},

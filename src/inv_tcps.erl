@@ -21,7 +21,6 @@
 
 %% API
 -export([start/1, stop/1]).
--export([start_link/1]).
 -export([port/1, idle/1, active/1]).
 
 %% gen_server callbacks
@@ -46,9 +45,6 @@
 %% ===================================================================
 
 start(Args) ->
-    supervisor:start_child(inv_tcps_sup, [Args]).
-
-start_link(Args) ->
     gen_server:start_link(?MODULE, Args, []).
 
 port(Pid) ->

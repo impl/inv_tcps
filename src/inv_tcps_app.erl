@@ -24,7 +24,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    inv_tcps_sup:start_link().
+    {ok, self()}.
 
 stop(_State) ->
     ok.
