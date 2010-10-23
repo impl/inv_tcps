@@ -17,7 +17,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/4]).
+-export([start_link/5]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -29,14 +29,15 @@
 %% API functions
 %% ===================================================================
 
-start_link(Listener, Callback, AcceptFun, CloseFun) ->
-    supervisor:start_link(?MODULE, [Listener, Callback, AcceptFun, CloseFun]).
+start_link(Listener, Callback, AcceptLimit, AcceptFun, CloseFun) ->
+    supervisor:start_link(?MODULE, [Listener, Callback, AcceptLimit, AcceptFun, CloseFun]).
 
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
-init([Listener, Callback, AcceptFun, CloseFun]) ->
-    AcceptorSpec = {inv_tcps_acceptor, {inv_tcps_acceptor, start_link, [Listener, Callback, AcceptFun, CloseFun]},
+init([Listener, Callback, AcceptLimit, AcceptFun, CloseFun]) ->
+    AcceptorSpec = {inv_tcps_acceptor, {inv_tcps_acceptor, start_link,
+                                        [Listener, Callback, AcceptLimit, AcceptFun, CloseFun]},
                     temporary, 5000, worker, [inv_tcps_acceptor]},
     {ok, {{simple_one_for_one, 5, 10}, [AcceptorSpec]}}.

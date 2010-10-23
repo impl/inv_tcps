@@ -17,7 +17,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start/1, start_link/4]).
+-export([start/1, start_link/5]).
 -export([accept/1]).
  
 %% gen_server callbacks
@@ -26,6 +26,11 @@
 %% Constants
 -define(TIMEOUT, 500).
 
+%% State
+-record(state, {listener, callback,
+                accept_limit, accepts = 0,
+                accept_fun, close_fun}).
+
 %% ===================================================================
 %% API functions
 %% ===================================================================
@@ -33,8 +38,8 @@
 start(Supervisor) ->
     supervisor:start_child(Supervisor, []).
 
-start_link(Listener, Callback, AcceptFun, CloseFun) ->
-    gen_server:start_link(?MODULE, [Listener, Callback, AcceptFun, CloseFun], []).
+start_link(Listener, Callback, AcceptLimit, AcceptFun, CloseFun) ->
+    gen_server:start_link(?MODULE, [Listener, Callback, AcceptLimit, AcceptFun, CloseFun], []).
 
 accept(Pid) ->
     gen_server:cast(Pid, accept).
@@ -43,13 +48,19 @@ accept(Pid) ->
 %% gen_server callbacks
 %% ===================================================================
 
-init([Listener, Callback, AcceptFun, CloseFun]) ->
-    {ok, {Listener, Callback, AcceptFun, CloseFun}}.
+init([Listener, Callback, AcceptLimit, AcceptFun, CloseFun]) ->
+    {ok, #state{listener = Listener, callback = Callback,
+                accept_limit = AcceptLimit,
+                accept_fun = AcceptFun, close_fun = CloseFun}}.
 
 handle_call(_Message, _From, State) ->
     {reply, ignore, State}.
 
-handle_cast(accept, {Listener, Callback, AcceptFun, CloseFun} = State) ->
+handle_cast(accept, #state{accept_limit = AcceptLimit, accepts = Accepts} = State) when is_integer(AcceptLimit) andalso
+                                                                                        Accepts >= AcceptLimit ->
+    {stop, normal, State};
+handle_cast(accept, #state{listener = Listener, callback = Callback,
+                           accepts = Accepts, accept_fun = AcceptFun, close_fun = CloseFun} = State) ->
     case gen_tcp:accept(Listener, ?TIMEOUT) of
         {ok, Socket} ->
             try
@@ -60,7 +71,7 @@ handle_cast(accept, {Listener, Callback, AcceptFun, CloseFun} = State) ->
                 CloseFun(self())
             end,
             accept(self()),
-            {noreply, State};
+            {noreply, State#state{accepts = Accepts + 1}};
         {error, closed} ->
             %% Parent process finished, so no worries here -- just shut down
             {stop, normal, State};

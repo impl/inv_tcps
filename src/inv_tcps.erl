@@ -35,6 +35,7 @@
 %% Defaults
 -define(DEFAULT_INITIAL_POOL_SIZE, 1).
 -define(DEFAULT_MAXIMUM_POOL_SIZE, infinity).
+-define(DEFAULT_ACCEPT_LIMIT, infinity).
 
 -define(DEFAULT_BACKLOG, 128).
 -define(DEFAULT_NO_DELAY, false).
@@ -78,6 +79,7 @@ init(Args) ->
 
     InitialSize = proplists:get_value(initial_pool_size, Args, ?DEFAULT_INITIAL_POOL_SIZE),
     MaximumSize = proplists:get_value(maximum_pool_size, Args, ?DEFAULT_MAXIMUM_POOL_SIZE),
+    AcceptLimit = proplists:get_value(accept_limit, Args, ?DEFAULT_ACCEPT_LIMIT),
 
     Callback = proplists:get_value(callback, Args, fun(_) -> ok end),
 
@@ -111,7 +113,7 @@ init(Args) ->
         {ok, Listener} ->
             case supervise(State#state{listener = Listener,
                                        port = inet:port(Listener)},
-                           Callback) of
+                           Callback, AcceptLimit) of
                 {ok, NewState} ->
                     {ok, NewState};
                 Error ->
@@ -202,9 +204,9 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% Private functions
 
-supervise(#state{listener = Listener} = State, Callback) ->
+supervise(#state{listener = Listener} = State, Callback, AcceptLimit) ->
     Owner = self(),
-    Supervisor = inv_tcps_acceptor_sup:start_link(Listener, Callback,
+    Supervisor = inv_tcps_acceptor_sup:start_link(Listener, Callback, AcceptLimit,
                                                   fun(Pid) -> accepted(Owner, Pid) end,
                                                   fun(Pid) -> closed(Owner, Pid) end),
 
