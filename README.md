@@ -33,14 +33,16 @@ Head into the `ebin` directory and start up an Erlang shell:
     1> application:load(inv_tcps), application:start(inv_tcps).
 
 This starts the inv_tcps supervisor. Before we continue, we need to define a
-callback function. For now, the callback must be a `fun`, but support for the
-more friendly `{M, F, A}` syntax will be added in the future.
+callback function. The callback can be a `fun()` or a tuple containing
+`{Module, Function}` or `{Module, Function, Args}`.
 
-A callback accepts a `socket()` (as returned by `gen_tcp:accept/1,2`). You can
-perform all the usual operations on the socket, including `gen_tcp:recv/2,3`,
-`gen_tcp:send/2` and `gen_tcp:close/1`. If the callback function returns without
-closing the socket, it will automatically be closed by inv_tcps; socket
-finalization will also occur if the callback throws an exception.
+A callback accepts a `socket()` (as returned by `gen_tcp:accept/1,2`). In the
+case of a `{Module, Function, Args}` callback, the socket is prepended to the
+argument list (`[Socket | Args]`). You can perform all the usual operations on
+the socket, including `gen_tcp:recv/2,3`, `gen_tcp:send/2` and
+`gen_tcp:close/1`. If the callback function returns without closing the socket,
+it will automatically be closed by inv_tcps; socket finalization will also occur
+if the callback throws an exception.
 
 Let's create a simple echo server, since it's one of the more straightforward
 examples:
@@ -80,3 +82,19 @@ You can get a list of active acceptors by calling `inv_tcps:active(Pid)`
 `inv_tcps:idle(Pid)`).
 
 Pretty cool, huh?
+
+Tuning
+------
+
+The main tuning options for inv_tcps are the `initial_pool_size` and
+`maximum_pool_size` arguments used when creating an acceptor pool. These default
+to `1` and `infinity` respectively, which is not terribly efficient.
+
+After some very basic testing, using 20 asynchronous threads with an
+`initial_pool_size` of `4` and a `maximum_pool_size` of `16` yielded fairly good
+results (a Hello-World-style Web server handled between 7,000 and 10,000
+requests per second in a VM). The syntax for this is as follows:
+
+    4> {ok, Pid2} = inv_tcps:start([{port, 8080}, {callback, YourCallback},
+                                    {initial_pool_size, 4},
+                                    {maximum_pool_size, 16}]).
