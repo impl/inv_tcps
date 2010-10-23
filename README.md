@@ -95,6 +95,6 @@ After some very basic testing, using 20 asynchronous threads with an
 results (a Hello-World-style Web server handled between 7,000 and 10,000
 requests per second in a VM). The syntax for this is as follows:
 
-    4> {ok, Pid2} = inv_tcps:start([{port, 8080}, {callback, YourCallback},
+    4> {ok, Pid2} = inv_tcps:start([{port, 8081}, {callback, YourCallback},
                                     {initial_pool_size, 4},
                                     {maximum_pool_size, 16}]).
