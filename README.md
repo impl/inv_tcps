@@ -18,7 +18,7 @@ the initial amount and never exceeds the maximum amount.
 Compiling
 ---------
 
-inv_tcps uses the excellent [rebar](http://hg.basho.com/rebar/) tool. To compile
+inv_tcps uses the excellent [rebar](https://github.com/basho/rebar) tool. To compile
 inv_tcps, execute `./rebar compile` in the project root.
 
 Playing around
